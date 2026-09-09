@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BSFGridAudio // TERMINAL & PIXELS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
+    body { background: #080c10; color: #fff; padding: 20px; display: flex; justify-content: center; }
+    .container { max-width: 550px; width: 100%; display: flex; flex-direction: column; gap: 14px; }
+    
+    /* Moldura estilo Terminal Dark */
+    .card { background: #111720; border: 1px dashed #00f0ff; border-radius: 8px; padding: 14px; }
+    .card.solid { border-style: solid; border-color: #1a2636; }
+
+    /* MODO TESTE - Navegação entre as Lâminas */
+    .test-mode-title { text-align: center; color: #8a99ad; font-size: 0.75rem; margin-bottom: 10px; }
+    .tabs { display: flex; gap: 8px; }
+    .tab-btn { 
+      flex: 1; 
+      padding: 8px; 
+      border-radius: 4px; 
+      border: 1px solid #00f0ff; 
+      background: transparent; 
+      color: #00f0ff; 
+      font-weight: bold; 
+      font-size: 0.72rem; 
+      cursor: pointer; 
+      text-align: center; 
+      transition: all 0.2s; 
+    }
+    .tab-btn.active { background: #50e3c2; color: #080c10; border-color: #50e3c2; }
+
+    /* Estilo do Terminal Dinâmico */
+    .terminal-title { color: #00f0ff; font-size: 1.3rem; font-weight: bold; margin-bottom: 12px; }
+    .terminal-box { background: #16202c; border-left: 3px solid #00f0ff; padding: 12px; margin-bottom: 12px; font-size: 0.85rem; line-height: 1.4; }
+    .terminal-status { color: #00f0ff; margin-top: 8px; font-size: 0.8rem; }
+    .terminal-sub { font-size: 0.82rem; color: #8a99ad; margin-bottom: 14px; }
+    
+    /* Botão Dinâmico de Ação */
+    .btn-action { background: #50e3c2; color: #080c10; border: none; padding: 12px 18px; font-weight: bold; font-size: 0.85rem; border-radius: 4px; cursor: pointer; text-transform: uppercase; width: 100%; text-align: center; }
+    .btn-action.arch { background: #ffb703; color: #080c10; }
+
+    /* Painel de Inspeção Rápida (Hover) */
+    .pixel-tooltip {
+      background: #16202c;
+      border: 1px solid #00f0ff;
+      color: #00f0ff;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      text-align: center;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
+    }
+
+    /* Painel de Conteúdo Dinâmico (Aberto no Clique) */
+    .pixel-detail-panel {
+      background: #111720;
+      border: 1px solid #00ffcc;
+      border-radius: 8px;
+      padding: 14px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .panel-title { color: #00ffcc; font-size: 1rem; margin-bottom: 10px; border-bottom: 1px solid #1a2636; padding-bottom: 6px; }
+    .info-group { margin-bottom: 8px; font-size: 0.82rem; }
+    .info-label { color: #8a99ad; }
+    .info-val { color: #fff; font-weight: bold; }
+    
+    /* Formulário de Perfil do Pixel */
+    label { font-size: 0.82rem; color: #00f0ff; display: block; margin-top: 8px; }
+    input[type="text"] { 
+      width: 100%; 
+      background: #16202c; 
+      border: 1px solid #1a2636; 
+      color: #fff; 
+      padding: 8px; 
+      margin-top: 4px; 
+      font-size: 0.8rem; 
+      border-radius: 4px; 
+    }
+    .btn-save { background: #00ffcc; color: #080c10; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 14px; cursor: pointer; border-radius: 4px; }
+
+    /* Grid de Pixels Demarcado */
+    .grid-card { 
+      background: #05080c; 
+      border: 2px solid #00f0ff; 
+      border-radius: 8px; 
+      padding: 10px; 
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+    }
+
+    .pixel-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 4px;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #16202c;
+      padding: 4px;
+      border-radius: 4px;
+    }
+
+    .px {
+      width: 100%;
+      height: 100%;
+      border-radius: 3px;
+      cursor: pointer;
+      border: 1px solid rgba(0, 240, 255, 0.15);
+      transition: all 0.15s ease;
+    }
+
+    .px:hover { 
+      transform: scale(1.15); 
+      z-index: 5; 
+      border-color: #00f0ff;
+    }
+
+    .px.vago { background-color: #0d1520; }
+    .px.ocupado { 
+      background-color: #00ffcc; 
+      box-shadow: 0 0 10px #00ffcc;
+      border-color: #ffffff;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 1. MODO TESTE (BOTÕES DE ALTERNÂNCIA DE LÂMINAS) -->
+  <div class="card">
+    <div class="test-mode-title">[ MODO TESTE: Alternar Visão do Usuário ]</div>
+    <div class="tabs">
+      <button class="tab-btn active" id="btn-neofito" onclick="setMode('neofito')">1. Neófito (Start)</button>
+      <button class="tab-btn" id="btn-operador" onclick="setMode('operador')">2. Operador (Pro)</button>
+      <button class="tab-btn" id="btn-arquiteto" onclick="setMode('arquiteto')">3. Arquiteto (Premium)</button>
+    </div>
+  </div>
+
+  <!-- 2. TERMINAL DINÂMICO DA LÂMINA ATIVA -->
+  <div class="card solid">
+    <div class="terminal-title">BSFGridAudio // TERMINAL</div>
+    <div class="terminal-box" id="termQuote">
+      "Se você chegou até aqui, significa que você é um dos nossos. Seja bem-vindo, gênio."
+      <div class="terminal-status" id="termStatus">Status: NEÓFITO [Acesso Parcial]</div>
+    </div>
+    <div class="terminal-sub" id="termSub">Vamos dar início ao processo de desbloqueio dessa bagaça? rsrsrs</div>
+    <button class="btn-action" id="termBtn">CONVIDAR 3 ALIADOS</button>
+  </div>
+
+  <!-- 3. PAINEL DE INSPEÇÃO RÁPIDA (HOVER) -->
+  <div class="pixel-tooltip" id="tooltip">Passe o mouse sobre um pixel para verificar o status...</div>
+
+  <!-- 4. PAINEL DE FICHA DO PIXEL (ABERTO NO CLIQUE) -->
+  <div class="pixel-detail-panel" id="detailPanel">
+    <!-- Abre dinamicamente ao clicar -->
+  </div>
+
+  <!-- 5. GRID DE PIXELS DEMARCADO -->
+  <div class="grid-card">
+    <div class="pixel-grid" id="pixelGrid"></div>
+  </div>
+
+</div>
+
+<script>
+  const slides = {
+    neofito: {
+      status: "Status: NEÓFITO [Acesso Parcial]",
+      sub: "Vamos dar início ao processo de desbloqueio dessa bagaça? rsrsrs",
+      btnText: "CONVIDAR 3 ALIADOS",
+      btnClass: "btn-action"
+    },
+    operador: {
+      status: "Status: OPERADOR DE FREQUÊNCIA [Membro Fundador]",
+      sub: "Sua frequência está totalmente liberada no ecossistema BSF.",
+      btnText: "✔ Selo BSF Founders Ativo no seu Pixel",
+      btnClass: "btn-action"
+    },
+    arquiteto: {
+      status: "Status: ARQUITETO DE SINAL [Chave Mestra]",
+      sub: "Você tem o poder de emitir acessos diretos para seus aliados.",
+      btnText: "GERAR CONVITE DE ALIADO (3/3 RESTANTES)",
+      btnClass: "btn-action arch"
+    }
+  };
+
+  function setMode(modeKey) {
+    document.getElementById('btn-neofito').className = 'tab-btn' + (modeKey === 'neofito' ? ' active' : '');
+    document.getElementById('btn-operador').className = 'tab-btn' + (modeKey === 'operador' ? ' active' : '');
+    document.getElementById('btn-arquiteto').className = 'tab-btn' + (modeKey === 'arquiteto' ? ' active' : '');
+
+    const slide = slides[modeKey];
+    document.getElementById('termStatus').innerText = slide.status;
+    document.getElementById('termSub').innerText = slide.sub;
+    
+    const btn = document.getElementById('termBtn');
+    btn.innerText = slide.btnText;
+    btn.className = slide.btnClass;
+  }
+
+  // Base de Dados dos Pixels Ocupados
+  const occupiedPixels = {
+    11: { name: "BSF Lupa Mabuze", role: "Arquiteto de Sinal", project: "Supervisão de Edição de Som", link: "instagram.com/lupamabuze", badge: "BSF Alpha Supporter" },
+    24: { name: "Provedor BSF Master", role: "Membro Fundador", project: "Desenvolvimento de Algoritmos", link: "besoundfinder.com", badge: "BSF Founder #001" },
+    45: { name: "Studio Sound Lab", role: "Operador Pro", project: "Mixagem Dolby Atmos", link: "studiosoundlab.com", badge: "BSF Pro" }
+  };
+
+  const grid = document.getElementById('pixelGrid');
+  const tooltip = document.getElementById('tooltip');
+  const detailPanel = document.getElementById('detailPanel');
+
+  for (let i = 0; i < 100; i++) {
+    const px = document.createElement('div');
+    px.className = 'px';
+    
+    if (occupiedPixels[i]) {
+      px.classList.add('ocupado');
+      
+      px.onmouseenter = () => {
+        const info = occupiedPixels[i];
+        tooltip.innerText = `Pixel #${i} - Ocupado por: ${info.name} [${info.role}] (Clique para abrir)`;
+      };
+
+      px.onclick = () => {
+        const info = occupiedPixels[i];
+        detailPanel.style.display = 'block';
+        detailPanel.innerHTML = `
+          <div class="panel-title">PIXEL #${i} // FICHA DO MEMBRO</div>
+          <div class="info-group"><span class="info-label">Nome / Nick:</span> <span class="info-val">${info.name}</span></div>
+          <div class="info-group"><span class="info-label">Função:</span> <span class="info-val">${info.role}</span></div>
+          <div class="info-group"><span class="info-label">Projeto Principal:</span> <span class="info-val">${info.project}</span></div>
+          <div class="info-group"><span class="info-label">Selo de Prestígio:</span> <span class="info-val" style="color:#00ffcc;">[ ${info.badge} ]</span></div>
+          <div class="info-group" style="margin-top:8px;"><span class="info-label">Link Externo / Portfólio:</span> <a href="https://${info.link}" target="_blank" style="color:#00f0ff;">https://${info.link}</a></div>
+        `;
+      };
+    } else {
+      px.classList.add('vago');
+
+      px.onmouseenter = () => {
+        tooltip.innerText = `Coordenada #${i} - Livre [Clique para reservar este espaço]`;
+      };
+
+      px.onclick = () => {
+        detailPanel.style.display = 'block';
+        detailPanel.innerHTML = `
+          <div class="panel-title">RESERVAR COORDENADA #${i}</div>
+          <label>Nome / Nickname:</label>
+          <input type="text" placeholder="Ex: Seu Nome ou Estúdio">
+          <label>Profissão / Especialidade:</label>
+          <input type="text" placeholder="Ex: Sound Designer, Editor de Som, Diretor...">
+          <label>Projeto Principal / Frequência:</label>
+          <input type="text" placeholder="Ex: Trilha sonora para cinema...">
+          <label>Link de Contato / Redes (Opcional):</label>
+          <input type="text" placeholder="Ex: instagram.com/seu-perfil">
+          <button class="btn-save" onclick="alert('Coordenada #${i} reservada!')">SALVAR & ANCORAR MEU PIXEL</button>
+        `;
+      };
+    }
+    
+    grid.appendChild(px);
+  }
+</script>
+
+</body>
+</html>
