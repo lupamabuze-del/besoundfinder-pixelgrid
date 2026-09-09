@@ -70,10 +70,12 @@
     .info-group { margin-bottom: 8px; font-size: 0.82rem; }
     .info-label { color: #8a99ad; }
     .info-val { color: #fff; font-weight: bold; }
+    .info-val a { color: #00f0ff; text-decoration: none; }
+    .info-val a:hover { text-decoration: underline; }
     
     /* Formulário de Perfil do Pixel */
     label { font-size: 0.82rem; color: #00f0ff; display: block; margin-top: 8px; }
-    input[type="text"] { 
+    input[type="text"], input[type="email"], input[type="tel"], input[type="url"] { 
       width: 100%; 
       background: #16202c; 
       border: 1px solid #1a2636; 
@@ -83,7 +85,8 @@
       font-size: 0.8rem; 
       border-radius: 4px; 
     }
-    .btn-save { background: #00ffcc; color: #080c10; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 14px; cursor: pointer; border-radius: 4px; }
+    input:focus { outline: none; border-color: #00ffcc; }
+    .btn-save { background: #00ffcc; color: #080c10; border: none; padding: 10px; font-weight: bold; width: 100%; margin-top: 14px; cursor: pointer; border-radius: 4px; text-transform: uppercase; }
 
     /* Grid de Pixels Demarcado */
     .grid-card { 
@@ -209,67 +212,115 @@
     btn.className = slide.btnClass;
   }
 
-  // Base de Dados dos Pixels Ocupados
-  const occupiedPixels = {
-    11: { name: "BSF Lupa Mabuze", role: "Arquiteto de Sinal", project: "Supervisão de Edição de Som", link: "instagram.com/lupamabuze", badge: "BSF Alpha Supporter" },
-    24: { name: "Provedor BSF Master", role: "Membro Fundador", project: "Desenvolvimento de Algoritmos", link: "besoundfinder.com", badge: "BSF Founder #001" },
-    45: { name: "Studio Sound Lab", role: "Operador Pro", project: "Mixagem Dolby Atmos", link: "studiosoundlab.com", badge: "BSF Pro" }
+  // Base de Dados Padrão Inicial
+  const defaultPixels = {
+    11: { name: "BSF Lupa Mabuze", role: "Arquiteto de Sinal", project: "Supervisão de Edição de Som", social: "https://instagram.com/lupamabuze", badge: "BSF Alpha Supporter", email: "lupamabuze@gmail.com", phone: "" },
+    24: { name: "Provedor BSF Master", role: "Membro Fundador", project: "Desenvolvimento de Algoritmos", social: "https://besoundfinder.com", badge: "BSF Founder #001", email: "", phone: "" },
+    45: { name: "Studio Sound Lab", role: "Operador Pro", project: "Mixagem Dolby Atmos", social: "https://studiosoundlab.com", badge: "BSF Pro", email: "", phone: "" }
   };
+
+  // Carrega os salvamentos do localStorage mesclando com os padrões
+  const localPixels = JSON.parse(localStorage.getItem('bsf_terminal_pixels')) || {};
+  const occupiedPixels = { ...defaultPixels, ...localPixels };
 
   const grid = document.getElementById('pixelGrid');
   const tooltip = document.getElementById('tooltip');
   const detailPanel = document.getElementById('detailPanel');
 
-  for (let i = 0; i < 100; i++) {
-    const px = document.createElement('div');
-    px.className = 'px';
-    
-    if (occupiedPixels[i]) {
-      px.classList.add('ocupado');
+  function renderGrid() {
+    grid.innerHTML = '';
+    for (let i = 0; i < 100; i++) {
+      const px = document.createElement('div');
+      px.className = 'px';
       
-      px.onmouseenter = () => {
-        const info = occupiedPixels[i];
-        tooltip.innerText = `Pixel #${i} - Ocupado por: ${info.name} [${info.role}] (Clique para abrir)`;
-      };
+      if (occupiedPixels[i]) {
+        px.classList.add('ocupado');
+        
+        px.onmouseenter = () => {
+          const info = occupiedPixels[i];
+          tooltip.innerText = `Pixel #${i} - Ocupado por: ${info.name} [${info.role || 'Membro'}] (Clique para abrir)`;
+        };
 
-      px.onclick = () => {
-        const info = occupiedPixels[i];
-        detailPanel.style.display = 'block';
-        detailPanel.innerHTML = `
-          <div class="panel-title">PIXEL #${i} // FICHA DO MEMBRO</div>
-          <div class="info-group"><span class="info-label">Nome / Nick:</span> <span class="info-val">${info.name}</span></div>
-          <div class="info-group"><span class="info-label">Função:</span> <span class="info-val">${info.role}</span></div>
-          <div class="info-group"><span class="info-label">Projeto Principal:</span> <span class="info-val">${info.project}</span></div>
-          <div class="info-group"><span class="info-label">Selo de Prestígio:</span> <span class="info-val" style="color:#00ffcc;">[ ${info.badge} ]</span></div>
-          <div class="info-group" style="margin-top:8px;"><span class="info-label">Link Externo / Portfólio:</span> <a href="https://${info.link}" target="_blank" style="color:#00f0ff;">https://${info.link}</a></div>
-        `;
-      };
-    } else {
-      px.classList.add('vago');
+        px.onclick = () => {
+          const info = occupiedPixels[i];
+          detailPanel.style.display = 'block';
+          detailPanel.innerHTML = `
+            <div class="panel-title">PIXEL #${i} // FICHA DO MEMBRO</div>
+            <div class="info-group"><span class="info-label">Nome / Nick:</span> <span class="info-val">${info.name}</span></div>
+            <div class="info-group"><span class="info-label">Função:</span> <span class="info-val">${info.role || '-'}</span></div>
+            <div class="info-group"><span class="info-label">Projeto Principal:</span> <span class="info-val">${info.project || '-'}</span></div>
+            <div class="info-group"><span class="info-label">E-mail:</span> <span class="info-val">${info.email ? `<a href="mailto:${info.email}">${info.email}</a>` : '-'}</span></div>
+            <div class="info-group"><span class="info-label">Telefone:</span> <span class="info-val">${info.phone ? `<a href="tel:${info.phone}">${info.phone}</a>` : '-'}</span></div>
+            ${info.badge ? `<div class="info-group"><span class="info-label">Selo:</span> <span class="info-val" style="color:#00ffcc;">[ ${info.badge} ]</span></div>` : ''}
+            <div class="info-group" style="margin-top:8px;"><span class="info-label">Rede Social / Link:</span> <span class="info-val">${info.social ? `<a href="${info.social.startsWith('http') ? info.social : 'https://' + info.social}" target="_blank">${info.social}</a>` : '-'}</span></div>
+          `;
+        };
+      } else {
+        px.classList.add('vago');
 
-      px.onmouseenter = () => {
-        tooltip.innerText = `Coordenada #${i} - Livre [Clique para reservar este espaço]`;
-      };
+        px.onmouseenter = () => {
+          tooltip.innerText = `Coordenada #${i} - Livre [Clique para reservar este espaço]`;
+        };
 
-      px.onclick = () => {
-        detailPanel.style.display = 'block';
-        detailPanel.innerHTML = `
-          <div class="panel-title">RESERVAR COORDENADA #${i}</div>
-          <label>Nome / Nickname:</label>
-          <input type="text" placeholder="Ex: Seu Nome ou Estúdio">
-          <label>Profissão / Especialidade:</label>
-          <input type="text" placeholder="Ex: Sound Designer, Editor de Som, Diretor...">
-          <label>Projeto Principal / Frequência:</label>
-          <input type="text" placeholder="Ex: Trilha sonora para cinema...">
-          <label>Link de Contato / Redes (Opcional):</label>
-          <input type="text" placeholder="Ex: instagram.com/seu-perfil">
-          <button class="btn-save" onclick="alert('Coordenada #${i} reservada!')">SALVAR & ANCORAR MEU PIXEL</button>
-        `;
-      };
+        px.onclick = () => {
+          detailPanel.style.display = 'block';
+          detailPanel.innerHTML = `
+            <div class="panel-title">RESERVAR COORDENADA #${i}</div>
+            <form action="https://formsubmit.co/lupamabuze@gmail.com" method="POST" target="_blank" onsubmit="savePixelData(${i}, event)">
+              <input type="hidden" name="_subject" value="Novo Pixel Ancorado no BSF Grid Audio! (#${i})">
+              <input type="hidden" name="_captcha" value="false">
+              <input type="hidden" name="Coordenada_Pixel" value="${i}">
+
+              <label>Nome / Nickname:</label>
+              <input type="text" id="input_name" name="Nome" required placeholder="Ex: Seu Nome ou Estúdio">
+
+              <label>E-mail de Contato:</label>
+              <input type="email" id="input_email" name="Email" required placeholder="seu@email.com">
+
+              <label>Telefone / WhatsApp:</label>
+              <input type="tel" id="input_phone" name="Telefone" placeholder="(11) 99999-9999">
+
+              <label>Profissão / Especialidade:</label>
+              <input type="text" id="input_role" name="Profissão" placeholder="Ex: Sound Designer, Editor de Som...">
+
+              <label>Projeto Principal / Frequência:</label>
+              <input type="text" id="input_project" name="Projeto" placeholder="Ex: Trilha sonora para cinema...">
+
+              <label>Rede Social / Link de Contato:</label>
+              <input type="url" id="input_social" name="Rede_Social" placeholder="https://instagram.com/seu-perfil">
+
+              <button type="submit" class="btn-save">SALVAR & ANCORAR MEU PIXEL</button>
+            </form>
+          `;
+        };
+      }
+      
+      grid.appendChild(px);
     }
-    
-    grid.appendChild(px);
   }
+
+  function savePixelData(pixelIndex, event) {
+    const data = {
+      name: document.getElementById('input_name').value,
+      email: document.getElementById('input_email').value,
+      phone: document.getElementById('input_phone').value,
+      role: document.getElementById('input_role').value,
+      project: document.getElementById('input_project').value,
+      social: document.getElementById('input_social').value,
+      badge: "Membro Recém-Ancorado"
+    };
+
+    // Atualiza base local
+    occupiedPixels[pixelIndex] = data;
+    localPixels[pixelIndex] = data;
+    localStorage.setItem('bsf_terminal_pixels', JSON.stringify(localPixels));
+
+    // Recarrega o grid visualmente
+    renderGrid();
+  }
+
+  // Inicializa o grid na página
+  renderGrid();
 </script>
 
 </body>
